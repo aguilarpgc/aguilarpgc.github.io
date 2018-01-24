@@ -1,0 +1,104 @@
+---
+layout: post
+title:  "Key-Value Observing"
+date:   2018-01-24 13:00:59 -0500
+---
+
+# Trying Key-Value Observing in Swift 3.2:
+
+In this example we need to have an object that has to be observed for a `NSObject` subclass, also we need to mark the observed property with `@objc` so it can be accessible from Obj-C, also mark it with `dynamic`, more detail of the `dynamic` funcionality [here](https://cocoacasts.com/what-does-the-dynamic-keyword-mean-in-swift-3/).
+{% highlight swift %}
+
+class Observed: NSObject {
+    
+    @objc dynamic var title: String
+    
+    init(title: String) {
+        
+        self.title = title
+    }
+}
+
+{% endhighlight %}
+
+
+Second we assign an observer (can be a viewcontroller sinces it's a subclass of `NSObject`) to that object, the function needs 4 parameters: 
+* The observer object that will be notified of the changes, must be a subclass of `NSObject` and implement the change notification function of the protocol [_NSKeyValueObserving_](https://developer.apple.com/documentation/foundation/notifications/nskeyvalueobserving)
+* Key-Path that previously in Obj-c it has to be an `NSString` so we could make a path for the properties, but now in Swift we make use of the `#keyPath` keyword which alert us in compile time for any errors.
+* Options that indicates values that has to be returned in our function listener implementation (usuarlly _.old_ and _.new_).
+* Context, custom data.
+
+
+{% highlight swift %}
+class ObserverManager: NSObject {
+
+    @objc var observed: Observed
+    
+    func observ(_ observer: NSObject) {
+
+    	observed.addObserver(observer, forKeyPath: #keyPath(Observed.title), options: [.old, .new], context: nil)
+    }
+}
+{% endhighlight %}
+
+Finally, we can observe the changes of the object in our viewcontroller overriding a function of the protocol `NSKeyValueObserving` so it can be notified of our object's property changes: 
+
+{% highlight swift %}
+class ViewController: UIViewController {
+
+    var observerManager = ObserverManager()
+
+    override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey : Any]?, context: UnsafeMutableRawPointer?) {
+
+        if keyPath == #keyPath(Observed.title) {
+
+            trigger(change?[.newKey] as? String)
+        }
+    }
+
+    func trigger(_ newValue: String?) {
+        
+        labelTitle.text = newValue
+    }
+}
+{% endhighlight %}
+
+
+# Swift 4
+In Swift 4 we can make use of a block to handle the changes of an observed object, also it uses a new kind of Key-Path: 
+
+{% highlight swift %}
+
+class ObserverManager: NSObject {
+    
+    @objc var observed: Observed
+    var kvObserver: NSKeyValueObservation?
+    
+    override init() {
+        
+        observed = Observed(title: "First Title")
+    }
+    
+    deinit {
+        
+        kvObserver?.invalidate()
+    }
+    
+    func observ(_ trigger: @escaping (String?) -> ()) {
+        
+        kvObserver = observed.observe(\.title, options: [.old, .new]) { (object, change) in
+            
+            trigger(change.newValue)
+        }
+    }
+    
+}
+
+{% endhighlight %}
+
+We are refering in the key-path to the property `title` of the object `Observed`.
+The `observe` function provides us to send a block so we can see any changes of the observed property, also the function returns a [`NSKeyValueObservation`](https://developer.apple.com/documentation/foundation/nskeyvalueobservation) object that need to be persisted in memory.
+
+
+# Code
+You can view the project example in [Github](https://github.com/aguilarpgc/KVO) for both Swift 3.2 and 4.
