@@ -48,6 +48,20 @@ class ViewController: UIViewController {
 
     var observerManager = ObserverManager()
 
+    override func viewDidLoad() {
+        
+        super.viewDidLoad()
+        
+        #if SWIFT4
+            observerManager.observ { (newValue) in
+                
+                self.trigger(newValue)
+            }
+        #else
+            observerManager.observ(self)
+        #endif
+    }
+
     override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey : Any]?, context: UnsafeMutableRawPointer?) {
 
         if keyPath == #keyPath(Observed.title) {
@@ -58,7 +72,7 @@ class ViewController: UIViewController {
 
     func trigger(_ newValue: String?) {
         
-        labelTitle.text = newValue
+        print(newValue ?? "No value.")
     }
 }
 {% endhighlight %}
