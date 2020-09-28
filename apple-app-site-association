@@ -3,7 +3,7 @@
     "apps": [],
     "details": [
     {
-      "appID": "F53VDDUPLX.com.aguilar.rappi.bets",
+      "appID": "F53VDDUPLX.com.aguilar.rappi.testbets"
       "paths": ["*"]
     }
     ]
